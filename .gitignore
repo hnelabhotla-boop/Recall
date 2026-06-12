@@ -1,0 +1,23 @@
+# recall
+Local full-text search across everything you've consumed on your Mac.
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Recall runtime
+.recall-trash/
+*.log
