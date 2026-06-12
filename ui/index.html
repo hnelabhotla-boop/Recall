@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>recall</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">⌘</span>
+        <span class="name">recall</span>
+        <span class="tagline">local full-text search</span>
+      </div>
+      <div class="stats" id="stats">…</div>
+    </header>
+
+    <div class="searchbar">
+      <input
+        id="q"
+        type="text"
+        placeholder="search everything you've seen…"
+        autocomplete="off"
+        autofocus
+        spellcheck="false"
+      >
+      <span class="kbd" id="count">0 results</span>
+    </div>
+
+    <main>
+      <ul id="results" class="results"></ul>
+      <div id="empty" class="empty">
+        <p>type a query above and hit <span class="kbd-inline">↵</span></p>
+        <p class="hint">try: <a href="#" data-q="kubernetes">kubernetes</a> · <a href="#" data-q="meeting">meeting</a> · <a href="#" data-q="link">link</a></p>
+      </div>
+    </main>
+
+    <footer class="footbar">
+      <span><span class="kbd-inline">↑↓</span> navigate</span>
+      <span><span class="kbd-inline">↵</span> open</span>
+      <span><span class="kbd-inline">⌘C</span> copy</span>
+      <span><span class="kbd-inline">esc</span> close</span>
+      <span class="spacer"></span>
+      <a href="/api/status" target="_blank">status</a>
+      <a href="#" id="reindex">re-index</a>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
