@@ -17,18 +17,15 @@ No cloud. No account. No telemetry. Your data never leaves your machine.
 
 ## Demo
 
+![recall overview](demo/hero.png)
+
+The web UI in action:
+
 ![recall searching for "github"](demo/screenshot-search.png)
 
-```
-$ recall "kubernetes tips"
-  ⌨️   shell      •  1d ago
-     kubectl get pods -A --field-selector=status.phase!=Running
+Diagnostics with the new `doctor` command:
 
-  📋  clipboard  •  just now
-     https://kubernetes.io/docs/concepts/configuration/manage-resources/
-
-  ...
-```
+![recall doctor](demo/doctor.png)
 
 Run `recall ui` and press `↑↓` to navigate, `Enter` to open the source, `Esc` to quit.
 
@@ -57,6 +54,7 @@ Restart your terminal after install, then press the hotkey (or run `recall ui`).
 | `recall watch` | Run the indexer in the foreground (polls sources) |
 | `recall index` | One-shot re-index of all sources |
 | `recall status` | Show index stats (X items across Y sources) |
+| `recall doctor` | Diagnose what's working and what isn't |
 | `recall config` | Print/edit config (retention, sources enabled, etc.) |
 | `recall uninstall` | Remove the symlink and `~/.recall/` (asks first) |
 
