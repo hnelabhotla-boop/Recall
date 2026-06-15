@@ -3,6 +3,10 @@
 Reads the local NoteStore.sqlite. The DB schema is undocumented and has
 shifted across macOS releases, but the ZICCLOUDSYNCINGOBJECT and ZICCLOUDSYNCINGOBJECT.ZBODY
 fields have been stable since macOS 10.15. We do best-effort.
+
+Requires Full Disk Access on modern macOS. Without it, the read will fail
+with a SQLITE_READONLY_DBMOVED / unable-to-open error. We surface that
+clearly via `log_indexer_error()` so the user knows what to do.
 """
 
 from __future__ import annotations
@@ -17,6 +21,15 @@ NOTES_DB = Path.home() / "Library/Group Containers/group.com.apple.notes/NoteSto
 
 def _connect_ro(path: Path) -> sqlite3.Connection:
     return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+
+
+def _permission_error() -> str:
+    return (
+        "Apple Notes can't be read. On macOS this almost always means "
+        "Full Disk Access isn't granted to your terminal. "
+        "Run `recall setup` for click-by-step instructions, or open "
+        "System Settings \u2192 Privacy & Security \u2192 Full Disk Access and add your terminal app."
+    )
 
 
 def iter_items(since_ts: float) -> list[dict]:
@@ -68,25 +81,36 @@ def iter_items(since_ts: float) -> list[dict]:
                     "app": "Notes",
                     "ts": ts,
                 })
-        except sqlite3.OperationalError:
-            # older macOS schema (pre-Catalina-ish)
-            cur = conn.execute(
-                "SELECT Z_PK, ZTITLE1, ZBODY, ZMODIFICATIONDATE FROM ZNOTE ORDER BY ZMODIFICATIONDATE DESC LIMIT 5000"
-            )
-            for pk, title, body, mod_ts in cur:
-                ts = float(mod_ts) + 978307200 if mod_ts else now()
-                if since_ts and ts < since_ts:
-                    continue
-                out.append({
-                    "id": stable_id("notes", "n", int(pk)),
-                    "source": "notes",
-                    "title": title or "(untitled)",
-                    "snippet": (body or title or "")[:8000],
-                    "url": None,
-                    "app": "Notes",
-                    "ts": ts,
-                })
+        except sqlite3.OperationalError as e:
+            msg = str(e).lower()
+            if "unable to open" in msg or "authorization" in msg or "permission" in msg:
+                # Permission denied \u2014 surface to the user
+                import logging
+                logging.getLogger("recall").warning("notes: " + _permission_error())
+            else:
+                # older macOS schema (pre-Catalina-ish)
+                cur = conn.execute(
+                    "SELECT Z_PK, ZTITLE1, ZBODY, ZMODIFICATIONDATE FROM ZNOTE ORDER BY ZMODIFICATIONDATE DESC LIMIT 5000"
+                )
+                for pk, title, body, mod_ts in cur:
+                    ts = float(mod_ts) + 978307200 if mod_ts else now()
+                    if since_ts and ts < since_ts:
+                        continue
+                    out.append({
+                        "id": stable_id("notes", "n", int(pk)),
+                        "source": "notes",
+                        "title": title or "(untitled)",
+                        "snippet": (body or title or "")[:8000],
+                        "url": None,
+                        "app": "Notes",
+                        "ts": ts,
+                    })
         conn.close()
+    except sqlite3.OperationalError as e:
+        msg = str(e).lower()
+        if "unable to open" in msg or "authorization" in msg or "permission" in msg:
+            import logging
+            logging.getLogger("recall").warning("notes: " + _permission_error())
     except Exception:
         pass
     return out

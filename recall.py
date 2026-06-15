@@ -159,13 +159,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return doctor.cmd_doctor(args)
 
 
+def cmd_setup(args: argparse.Namespace) -> int:
+    from recall import setup as setup_mod
+    return setup_mod.cmd_setup(args)
+
+
 def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
     # If the first arg isn't a known subcommand or a flag, treat all of argv as
     # the search query. This makes `recall "kubernetes tips"` work as expected.
-    KNOWN = {"ui", "watch", "index", "status", "config", "uninstall", "search", "-h", "--help","doctor"}
+    KNOWN = {"ui", "watch", "index", "status", "config", "uninstall", "search", "doctor", "setup", "-h", "--help"}
     if argv and argv[0] not in KNOWN and not argv[0].startswith("-"):
         argv = ["search", *argv]
 
@@ -185,6 +190,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("index", help="one-shot re-index").set_defaults(func=cmd_index)
     sub.add_parser("status", help="show index stats").set_defaults(func=cmd_status)
     sub.add_parser("doctor", help="diagnose what works and what doesn't").set_defaults(func=cmd_doctor)
+    sub.add_parser("setup", help="walk through granting macOS permissions").set_defaults(func=cmd_setup)
     sub.add_parser("config", help="print config").set_defaults(func=cmd_config)
     sub.add_parser("uninstall", help="remove recall from your system").set_defaults(func=cmd_uninstall)
 

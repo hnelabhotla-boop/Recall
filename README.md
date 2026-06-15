@@ -17,17 +17,42 @@ No cloud. No account. No telemetry. Your data never leaves your machine.
 
 ## Demo
 
-![recall overview](demo/hero.png)
+![recall overview](demo/hero-v2.png)
 
-The web UI in action:
+Live search in action:
 
 ![recall searching for "github"](demo/screenshot-search.png)
 
-Diagnostics with the new `doctor` command:
+Diagnostics with the `doctor` command:
 
 ![recall doctor](demo/doctor.png)
 
 Run `recall ui` and press `↑↓` to navigate, `Enter` to open the source, `Esc` to quit.
+
+## macOS permissions (one-time, ~30 seconds)
+
+Some sources require **Full Disk Access** on macOS before they can be read:
+
+- **Apple Notes** — needs Full Disk Access
+- **Local Mail** — needs Full Disk Access
+- **Browser history** — usually works without extra steps
+- **Clipboard / shell / recent files** — work out of the box
+
+If a source isn't working, run:
+
+```bash
+recall setup     # click-by-step walkthrough, opens System Settings
+recall doctor    # shows exactly which sources are blocked and why
+```
+
+The `recall setup` command will:
+
+1. Detect which terminal you use (Terminal, iTerm, Warp, VS Code, ...)
+2. Open the right System Settings pane for you
+3. Walk you through adding it to Full Disk Access
+4. Remind you to fully quit + reopen your terminal (the #1 cause of "I granted it but it still doesn't work")
+
+**Important:** after granting access, **quit and reopen your terminal completely** — the permission only applies to new processes.
 
 ## Install
 
@@ -55,23 +80,24 @@ Restart your terminal after install, then press the hotkey (or run `recall ui`).
 | `recall index` | One-shot re-index of all sources |
 | `recall status` | Show index stats (X items across Y sources) |
 | `recall doctor` | Diagnose what's working and what isn't |
+| `recall setup` | Walk through granting macOS permissions (Notes, Mail) |
 | `recall config` | Print/edit config (retention, sources enabled, etc.) |
 | `recall uninstall` | Remove the symlink and `~/.recall/` (asks first) |
 
-## What it indexes (v1)
+## What it indexes
 
-| Source | What | How |
+| Source | What | Permissions needed |
 |---|---|---|
-| **Clipboard** | Everything you copy | Polls `pbpaste` every 1s, dedupes, captures source app via `osascript` |
-| **Browser history** | Every URL you visited | Reads Safari `History.db` (read-only). Chrome/Brave/Arc/Edge: same approach. |
-| **Apple Notes** | All notes & their full text | Reads `NoteStore.sqlite` (read-only) |
-| **Shell history** | Every command you ran | Reads `~/.zsh_history` and `~/.bash_history` |
-| **Recent files** | Files you opened recently | Reads `com.apple.recentitems.plist` + per-app recents |
-| **Mail** | Local mailboxes (if any) | Reads `~/Library/Mail/V10/MailData/*.mbox` |
-| **Slack** | Messages across workspaces | Reads workspace SQLite DBs (read-only) |
-| **Discord** | DMs and server messages | Reads `Local Storage/leveldb/` (read-only) |
+| **Clipboard** | Everything you copy | none |
+| **Browser history** | Every URL you visited (Safari, Chrome, Brave, Arc, Edge) | usually none |
+| **Apple Notes** | All notes & their full text | **Full Disk Access** (run `recall setup`) |
+| **Shell history** | Every command you ran (zsh + bash) | none |
+| **Recent files** | Files you opened recently | none |
+| **Mail** | Local mailboxes (mbox files) | **Full Disk Access** |
+| **Slack** | Messages across workspaces | usually none |
+| **Discord** | DMs and server messages | usually none |
 
-Sources that aren't available (e.g. you don't use Discord) are silently skipped. Status tells you which are live.
+Sources that aren't available (e.g. you don't use Discord) are silently skipped. `recall status` and `recall doctor` tell you which are live and which need permissions.
 
 ## Privacy
 
