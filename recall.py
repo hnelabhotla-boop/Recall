@@ -164,13 +164,45 @@ def cmd_setup(args: argparse.Namespace) -> int:
     return setup_mod.cmd_setup(args)
 
 
+def cmd_titles(args: argparse.Namespace) -> int:
+    """Backfill page titles for any URL items that still have a bare-URL title."""
+    from recall import url_titles
+    conn = db.conn()
+    rows = conn.execute(
+        "SELECT id, source, title, url, snippet, app, ts, extra FROM items WHERE url IS NOT NULL AND url LIKE 'http%'"
+    ).fetchall()
+    if not rows:
+        print("  no URL items to backfill")
+        return 0
+    print(f"  backfilling titles for up to {min(len(rows), args.limit)} URL item(s)...")
+    updated = 0
+    checked = 0
+    for r in rows:
+        if checked >= args.limit:
+            break
+        checked += 1
+        d = dict(r)
+        title = (d.get("title") or "").strip()
+        url = d.get("url")
+        if title and not title.startswith(("http://", "https://")) and title != url:
+            continue
+        new_title = url_titles.fetch_title(url)
+        if new_title and new_title != title:
+            conn.execute("UPDATE items SET title = ? WHERE id = ?", (new_title, d["id"]))
+            updated += 1
+            print(f"    + {d['id'][:24]:24}  {new_title[:60]}")
+    conn.commit()
+    print(f"\n  done. updated {updated}/{checked} title(s).")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
     # If the first arg isn't a known subcommand or a flag, treat all of argv as
     # the search query. This makes `recall "kubernetes tips"` work as expected.
-    KNOWN = {"ui", "watch", "index", "status", "config", "uninstall", "search", "doctor", "setup", "-h", "--help"}
+    KNOWN = {"ui", "watch", "index", "status", "config", "uninstall", "search", "doctor", "setup", "titles", "-h", "--help"}
     if argv and argv[0] not in KNOWN and not argv[0].startswith("-"):
         argv = ["search", *argv]
 
@@ -191,6 +223,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="show index stats").set_defaults(func=cmd_status)
     sub.add_parser("doctor", help="diagnose what works and what doesn't").set_defaults(func=cmd_doctor)
     sub.add_parser("setup", help="walk through granting macOS permissions").set_defaults(func=cmd_setup)
+    t = sub.add_parser("titles", help="backfill page titles for URL items")
+    t.add_argument("--limit", "-n", type=int, default=200)
+    t.set_defaults(func=cmd_titles)
     sub.add_parser("config", help="print config").set_defaults(func=cmd_config)
     sub.add_parser("uninstall", help="remove recall from your system").set_defaults(func=cmd_uninstall)
 

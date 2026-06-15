@@ -81,6 +81,7 @@ Restart your terminal after install, then press the hotkey (or run `recall ui`).
 | `recall status` | Show index stats (X items across Y sources) |
 | `recall doctor` | Diagnose what's working and what isn't |
 | `recall setup` | Walk through granting macOS permissions (Notes, Mail) |
+| `recall titles` | Backfill page titles for URL items (one-time) |
 | `recall config` | Print/edit config (retention, sources enabled, etc.) |
 | `recall uninstall` | Remove the symlink and `~/.recall/` (asks first) |
 
@@ -99,6 +100,21 @@ Restart your terminal after install, then press the hotkey (or run `recall ui`).
 
 Sources that aren't available (e.g. you don't use Discord) are silently skipped. `recall status` and `recall doctor` tell you which are live and which need permissions.
 
+## URL titles
+
+When a search result is a URL (browser hit, clipboard capture, etc.), recall
+fetches the actual page title on demand and shows it instead of the raw URL.
+
+```
+Before:  https://news.ycombinator.com/item?id=12345
+After:   Show HN: I built X \u2013 Hacker News
+```
+
+Results are cached in `~/.recall/url_titles.json` so the same URL is only
+fetched once. To upgrade every URL item in your index, run
+`recall titles --limit 500`. Best-effort: if a URL is unreachable, the raw
+URL is shown as a fallback.
+
 ## Privacy
 
 - **All data stays on your machine.** The index lives in `~/.recall/index.db` and nowhere else.
@@ -108,8 +124,6 @@ Sources that aren't available (e.g. you don't use Discord) are silently skipped.
 - **Easy to wipe.** `recall uninstall` removes everything. Or just `rm -rf ~/.recall`.
 
 ## Why this exists
-
-The "few seconds, thousands of times" math:
 
 - 2–3 "where did I see that?" moments per day, currently costing 2–5 min each
 - After recall: ~10 sec each

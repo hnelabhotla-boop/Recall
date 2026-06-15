@@ -37,6 +37,22 @@ def search(query: str, limit: int = 20) -> list[dict]:
         age = max(0, now - r.get("ts", now))
         r["effective_score"] = r.get("score", 0) - (age / RECENCY_DECAY_SECONDS) * 0.1
     rows.sort(key=lambda r: (r["effective_score"], -r.get("ts", 0)))
+    # Best-effort: if any URL-having row has a bare-URL title, swap in a
+    # fetched page title (cached). Failures are silent.
+    try:
+        from recall import url_titles
+        for r in rows:
+            url = r.get("url")
+            title = (r.get("title") or "").strip()
+            if not url or not url.startswith(("http://", "https://")):
+                continue
+            # If the title looks like a URL (raw), try to upgrade
+            if title.startswith(("http://", "https://")) or title == url:
+                fetched = url_titles.fetch_title(url)
+                if fetched:
+                    r["title"] = fetched
+    except Exception:
+        pass
     return rows
 
 

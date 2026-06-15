@@ -5,6 +5,9 @@ the main thread (it can block on password managers etc.) by running a small
 thread per poll. We detect the foreground app via AppleScript so the result
 can show e.g. "from Chrome".
 
+If the clipboard contains a single URL, we set the `url` field so the
+title-fetcher can later upgrade the bare-URL title to a real page title.
+
 Privacy note: clipboard contents can include passwords when you copy them
 to paste into a password manager. We still index them — recall is local and
 private, but if you'd rather skip short, sensitive-looking snippets, see
@@ -15,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import shutil
 import subprocess
 import threading
@@ -29,6 +33,8 @@ _LOCK = threading.Lock()
 
 # Poll at most this often (seconds) to keep CPU/nagging low.
 POLL_INTERVAL = 1.0
+
+URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.I)
 
 
 def _pbcopy() -> str | None:
@@ -79,6 +85,19 @@ def _should_skip(text: str) -> bool:
     return False
 
 
+def _extract_url(text: str) -> str | None:
+    """If the clipboard text is (or contains) a single URL, return it."""
+    stripped = text.strip()
+    # whole text is a URL?
+    if re.match(r"^https?://\S+$", stripped):
+        return stripped.rstrip(".,;:!?)")
+    # first URL found
+    m = URL_RE.search(text)
+    if m:
+        return m.group(0).rstrip(".,;:!?)")
+    return None
+
+
 def poll_once() -> list[dict]:
     """Capture the current clipboard if it changed. Returns a list (0 or 1 items)."""
     global _LAST_HASH, _LAST_POLL
@@ -99,6 +118,7 @@ def poll_once() -> list[dict]:
 
         app = _foreground_app()
         snippet = text[:4000]  # cap per item
+        url = _extract_url(text)
         item_id = stable_id("clipboard", h)
         return [
             {
@@ -106,7 +126,7 @@ def poll_once() -> list[dict]:
                 "source": "clipboard",
                 "title": (text.strip().splitlines() or [""])[0][:80] or "(clipboard)",
                 "snippet": snippet,
-                "url": None,
+                "url": url,
                 "app": app,
                 "ts": now(),
             }
